@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Bot, User, LogOut, GraduationCap, Sparkles } from "lucide-react";
+import { Send, Bot, User, LogOut, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,16 +18,20 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hello! I'm IntelliAssist, your AI assistant for IITM Janakpuri College. How can I help you today?",
+      content:
+        "Hello! I'm IntelliAssist, your AI assistant for IITM Janakpuri College. How can I help you today?",
       sender: "bot",
       timestamp: new Date(),
     },
   ]);
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const [context, setContext] = useState<string | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,51 +49,160 @@ const Chat = () => {
     navigate("/auth");
   };
 
-  const simulateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes("admission") || lowerMessage.includes("enroll")) {
-      return "For admissions, please visit the college office or check our website. The admission process typically starts in May. You'll need your 12th-grade marksheet and other documents. Would you like more specific information?";
-    } else if (lowerMessage.includes("fee") || lowerMessage.includes("cost")) {
-      return "The fee structure varies by course. For B.Tech programs, the annual fee is approximately ₹1,20,000. For detailed information about fees for specific courses, please contact the accounts department or visit the official website.";
-    } else if (lowerMessage.includes("course") || lowerMessage.includes("program")) {
-      return "IITM Janakpuri offers various programs including B.Tech in Computer Science, Electronics, Mechanical Engineering, and more. We also offer MBA and MCA programs. Which course are you interested in?";
-    } else if (lowerMessage.includes("placement") || lowerMessage.includes("job")) {
-      return "Our placement cell works year-round to connect students with top companies. Recent placement statistics show 85% placement rate with average packages ranging from 4-8 LPA. Companies like TCS, Infosys, and Wipro regularly recruit from our campus.";
-    } else if (lowerMessage.includes("faculty") || lowerMessage.includes("professor")) {
-      return "Our faculty members are highly qualified with PhDs and extensive industry experience. Each department has dedicated faculty who focus on both theoretical knowledge and practical skills development.";
-    } else if (lowerMessage.includes("library") || lowerMessage.includes("book")) {
-      return "The college library is open Monday to Saturday, 9 AM to 6 PM. We have over 50,000 books, journals, and digital resources. Students can borrow up to 5 books at a time for 15 days.";
-    } else if (lowerMessage.includes("hostel") || lowerMessage.includes("accommodation")) {
-      return "Yes, we have separate hostel facilities for boys and girls with modern amenities including Wi-Fi, mess facilities, and 24/7 security. Hostel fees are separate from tuition fees. Would you like to know more about hostel admission?";
-    } else {
-      return "I'd be happy to help! I can assist you with information about admissions, courses, fees, placements, faculty, library, hostels, and more. What would you like to know specifically?";
+  const followUps = (topic: string) => {
+    switch (topic) {
+      case "admission":
+        return "\n\nWould you like details about eligibility, documents, dates, or registration process?";
+      case "courses":
+        return "\n\nDo you want the syllabus, fees, duration, or career scope?";
+      case "placements":
+        return "\n\nDo you want company lists, average packages, or training info?";
+      case "events":
+        return "\n\nWant to know about Impulse, Technovation, or cultural fests?";
+      case "hostel":
+        return "\n\nShould I tell you about fees, facilities, or room allocation?";
+      default:
+        return "";
     }
   };
 
-  const handleSend = async () => {
+  const simulateBotResponse = (userMessage: string): string => {
+    const msg = userMessage.toLowerCase();
+
+    // greetings
+    if (msg.includes("hello") || msg.includes("hi")) {
+      return "Hello! How can I assist you about IITM Janakpuri today?";
+    }
+
+    if (msg.includes("how are you")) {
+      return "I'm doing great! What can I help you with about IITM?";
+    }
+
+    // admissions
+    if (msg.includes("admission")) {
+      setContext("admission");
+      return (
+        "Admissions at IITM Janakpuri are conducted through GGSIPU (IPU) counselling. " +
+        "You must apply via the IPU portal. Required documents include 12th marksheet, ID proof, photos and category certificates." +
+        followUps("admission")
+      );
+    }
+
+    // fees
+    if (msg.includes("fee")) {
+      return (
+        "Fee structure varies by course:\n" +
+        "• BCA: ~₹1,50,000 per year\n" +
+        "• BBA: ~₹1,45,000 per year\n" +
+        "• BJMC: ~₹1,40,000 per year\n" +
+        "• MBA/MCA: ~₹1,80,000 per year\n\n" +
+        "If you want official details, ask: 'Show me the official website'."
+      );
+    }
+
+    // courses
+    if (
+      msg.includes("course") ||
+      msg.includes("bca") ||
+      msg.includes("bba") ||
+      msg.includes("bjmc") ||
+      msg.includes("mca") ||
+      msg.includes("mba")
+    ) {
+      setContext("courses");
+      return (
+        "IITM Janakpuri offers:\n• BCA\n• BBA\n• BJMC\n• B.Com (Hons)\n• MCA\n• MBA\n\n" +
+        "Which course do you want details about?" +
+        followUps("courses")
+      );
+    }
+
+    // placements
+    if (msg.includes("placement") || msg.includes("package")) {
+      setContext("placements");
+      return (
+        "IITM has strong placement records with companies like TCS, Infosys, Deloitte, KPMG, EY.\n" +
+        "Average package: 4–8 LPA\nHighest package: Up to 12–14 LPA\nPlacement rate: ~85–90%\n" +
+        followUps("placements")
+      );
+    }
+
+    // faculty
+    if (msg.includes("faculty") || msg.includes("teacher")) {
+      return "The faculty is experienced, supportive and strong in both practical and academic knowledge.";
+    }
+
+    // library
+    if (msg.includes("library")) {
+      return "Library hours: 9 AM – 6 PM (Mon–Sat). Includes 50,000+ books, journals, digital study materials & reading hall.";
+    }
+
+    // hostel
+    if (msg.includes("hostel") || msg.includes("accommodation")) {
+      setContext("hostel");
+      return (
+        "IITM offers separate hostels for boys & girls with WiFi, mess, 24x7 security, laundry & study rooms." +
+        followUps("hostel")
+      );
+    }
+
+    // events
+    if (msg.includes("event") || msg.includes("fest") || msg.includes("cultural")) {
+      setContext("events");
+      return (
+        "IITM hosts multiple events like:\n• Impulse (Annual Fest)\n• TechnoVision\n• Hackathons\n• Cultural Week\n• Sports Fest\n" +
+        followUps("events")
+      );
+    }
+
+    // exams
+    if (msg.includes("exam") || msg.includes("result")) {
+      return "Exam results and notices are published on the GGSIPU official portal. Ask if you want the link.";
+    }
+
+    // contact
+    if (msg.includes("contact") || msg.includes("phone") || msg.includes("email") || msg.includes("official website")) {
+      return (
+        "Here are the official contacts:\n" +
+        "Phone: 011-28520890\n" +
+        "Email: info@iitmjp.ac.in\n" +
+        "Official Website: <a href='https://iitmjp.ac.in/' target='_blank' class='text-primary underline'>iitmjp.ac.in</a>"
+      );
+    }
+
+    // location
+    if (msg.includes("location") || msg.includes("address")) {
+      return "IITM Janakpuri is located at D-29, Institutional Area, Janakpuri, New Delhi – 110058.";
+    }
+
+    return (
+      "I can help you with admissions, fees, courses, events, hostels, placements and more. " +
+      "Please ask something specific about IITM Janakpuri."
+    );
+  };
+
+  const handleSend = () => {
     if (!input.trim()) return;
 
-    const userMessage: Message = {
+    const userMsg: Message = {
       id: Date.now().toString(),
       content: input,
       sender: "user",
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
-    // Simulate bot thinking and response
     setTimeout(() => {
-      const botMessage: Message = {
+      const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         content: simulateBotResponse(input),
         sender: "bot",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMsg]);
       setIsTyping(false);
     }, 1500);
   };
@@ -103,7 +216,6 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 flex flex-col">
-      {/* Header */}
       <header className="border-b border-border/50 bg-card/80 backdrop-blur-md shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -117,94 +229,76 @@ const Chat = () => {
               <p className="text-xs text-muted-foreground">IITM Janakpuri</p>
             </div>
           </div>
+
           <Button
             variant="outline"
             size="sm"
             onClick={handleLogout}
             className="hover:bg-destructive hover:text-destructive-foreground transition-all"
           >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
+            <LogOut className="w-4 h-4 mr-2" /> Logout
           </Button>
         </div>
       </header>
 
-      {/* Chat Area */}
       <div className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
         <Card className="flex-1 flex flex-col shadow-2xl border-border/50 bg-card/95 backdrop-blur-sm overflow-hidden">
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((message, index) => (
+            {messages.map((msg) => (
               <div
-                key={message.id}
-                className={`flex gap-3 animate-fade-in ${
-                  message.sender === "user" ? "flex-row-reverse" : "flex-row"
+                key={msg.id}
+                className={`flex items-start gap-3 ${
+                  msg.sender === "user" ? "justify-end" : ""
                 }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <Avatar className={`w-10 h-10 ${message.sender === "bot" ? "bg-gradient-primary" : "bg-gradient-secondary"}`}>
-                  <AvatarFallback className="text-white">
-                    {message.sender === "bot" ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
-                  </AvatarFallback>
-                </Avatar>
+                {msg.sender === "bot" && (
+                  <Avatar className="shadow-md">
+                    <AvatarFallback>
+                      <Bot className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+
                 <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-lg ${
-                    message.sender === "user"
-                      ? "bg-gradient-primary text-primary-foreground"
-                      : "bg-card border border-border"
+                  className={`p-3 rounded-xl max-w-[75%] text-sm shadow-md ${
+                    msg.sender === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-none"
+                      : "bg-muted text-muted-foreground rounded-bl-none"
                   }`}
-                >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                  <span className={`text-xs mt-1 block ${message.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
+                  dangerouslySetInnerHTML={{ __html: msg.content }}
+                />
+
+                {msg.sender === "user" && (
+                  <Avatar className="shadow-md">
+                    <AvatarFallback>
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
               </div>
             ))}
 
             {isTyping && (
-              <div className="flex gap-3 animate-fade-in">
-                <Avatar className="w-10 h-10 bg-gradient-primary">
-                  <AvatarFallback className="text-white">
-                    <Bot className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="bg-card border border-border rounded-2xl px-4 py-3 shadow-lg">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Bot className="w-4 h-4 animate-pulse" />
+                <span className="animate-pulse">Assistant is typing...</span>
               </div>
             )}
+
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="border-t border-border/50 bg-muted/30 p-4">
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask me anything about IITM Janakpuri..."
-                className="flex-1 bg-background border-border focus:ring-2 focus:ring-primary transition-all"
-                disabled={isTyping}
-              />
-              <Button
-                onClick={handleSend}
-                disabled={!input.trim() || isTyping}
-                size="icon"
-                className="bg-gradient-primary hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-secondary" />
-              Powered by AI - responses may vary
-            </p>
+          <div className="border-t border-border/50 p-4 bg-card/60 backdrop-blur-md flex items-center gap-3">
+            <Input
+              placeholder="Type your message..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyPress}
+              className="flex-1"
+            />
+            <Button onClick={handleSend} className="shadow-md">
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
         </Card>
       </div>
